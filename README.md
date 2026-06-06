@@ -59,12 +59,18 @@
 ```bash
 cd afisha-mock
 cp .env.example .env          # строка подключения к БД
-docker compose up -d          # поднять Postgres
+docker compose up -d          # поднять Postgres (нужен Docker)
 npm install
 npx prisma migrate deploy     # создать таблицы
-npx tsx scripts/seed.ts       # наполнить каталог событиями
+npx prisma generate           # сгенерировать Prisma-клиент
+npx tsx scripts/seed.ts       # наполнить каталог из prisma/seed-data.json
 npm run dev                   # http://localhost:3000
 ```
+
+> `seed.ts` берёт события из готового файла `prisma/seed-data.json` — **без
+> обращения к Афише**. Обновить каталог из Афиши (редко, одному человеку):
+> `npx tsx scripts/refresh-catalog.ts`, затем `npx tsx scripts/export-catalog.ts`
+> и закоммитить обновлённый `seed-data.json`.
 
 ### 2. Генератор открыток (порт 3001)
 
