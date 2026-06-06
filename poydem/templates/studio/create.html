@@ -21,6 +21,7 @@
        style="background:radial-gradient(55% 80% at 50% 0%, rgba(255,61,46,.16), rgba(236,72,153,.10) 42%, transparent 70%)"></div>
 
   <div class="relative mx-auto max-w-2xl px-4 py-10"
+       data-event-title="{{ event.title }}"
        x-data="{
          recipient: '', style: '{{ comm_styles[0].id }}',
          cardUrl: '', cardId: '', loading: false, done: false, error: '',
@@ -47,7 +48,7 @@
            } catch(e){}
          },
          copied: false,
-         get shareText(){ return (this.recipient ? this.recipient + ', ' : '') + 'тебя зовут на «' + {{ event.title|tojson }} + '» ✨'; },
+         get shareText(){ const t = this.$el.dataset.eventTitle || 'событие'; return (this.recipient ? this.recipient + ', ' : '') + 'тебя зовут на «' + t + '» ✨'; },
          async share(){
            const text = this.shareText;
            // 1) пробуем отправить САМУ картинку-открытку файлом (телефоны)
