@@ -14,30 +14,30 @@
 ## Технологии
 
 - **Python 3.10+** + **Flask** — бэкенд и логика
+- **PostgreSQL** (в Docker) + **psycopg** — каталог событий и открытки
 - **Jinja2** — шаблоны страниц
-- **Tailwind CSS** (CDN) — стили
-- **Alpine.js** (CDN) — лёгкий интерактив (шаги, живое превью)
+- **Tailwind CSS** (CDN) + **Alpine.js** (CDN) — стили и лёгкий интерактив
 - **requests + BeautifulSoup** — парсер событий afisha.ru
 - **Pillow** — генерация картинки открытки (этап ИИ)
 - ИИ-генерация текста — подключается в `poydem/ai.py`
 
-Один язык на весь проект (Python), без Node и без отдельной БД — каталог
-хранится в `poydem/data/events.json`.
-
 ## Запуск
 
-Нужен только **Python 3.10+**.
+Нужны **Python 3.10+** и **Docker** (для базы данных).
 
 ```bash
-make install   # создать окружение и поставить зависимости (один раз)
+make install   # окружение + зависимости + Postgres + каталог (один раз)
 make dev       # запустить сайт → http://localhost:5001
 ```
 
-`make help` — список команд. Без Makefile то же вручную:
+`make help` — список команд. Без Makefile вручную:
 
 ```bash
+cp .env.example .env
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+docker compose up -d                  # поднять Postgres
+.venv/bin/python -m poydem.seed       # таблицы + каталог
 .venv/bin/flask --app poydem run --debug --port 5001
 ```
 
@@ -52,19 +52,30 @@ poydem/
 ├── afisha.py          # маршруты мини-Афиши (каталог, событие, API)
 ├── studio.py          # маршруты студии (/create, /api/generate)
 ├── parser.py          # парсер afisha.ru (OG-теги + JSON-LD)
-├── store.py           # каталог событий (data/events.json)
+├── db.py              # подключение к Postgres
+├── schema.sql         # таблицы events и cards
+├── store.py           # каталог событий (таблица events)
+├── cards.py           # сгенерированные открытки (таблица cards)
+├── seed.py            # создать таблицы + наполнить каталог
 ├── content.py         # стили, цвета, тон + заглушка текста
 ├── ai.py              # ИИ-генерация текста ← сюда команда вписывает модель
-├── data/events.json   # каталог из 8 событий
+├── data/events.json   # снимок каталога из 8 событий
+├── static/cards/      # PNG-картинки открыток (генерит Pillow)
 └── templates/         # Jinja: афиша + студия
 ```
+
+### База данных
+
+- **events** — каталог событий (поле `data` JSONB хранит событие целиком)
+- **cards** — открытки: текст, метаданные и имя файла картинки (`image_file`).
+  Сами картинки лежат файлами в `poydem/static/cards/`.
 
 ## Что доделать (для команды)
 
 - 🟣 **ИИ-текст** — реализовать `generate_card_text()` в `poydem/ai.py`
-  (выбрать API: GigaChat / OpenAI / YandexGPT, ключ в `.env`)
-- 🎨 **Картинка открытки** — рендер PNG через Pillow для шеринга
+- 🎨 **Картинка открытки** — рендер PNG через Pillow, сохранить в `static/cards/`
 - 🟢 **Лендинг открытки** `/card/<id>` — что видит получатель по ссылке
+  (сохранение открытки уже есть в `poydem/cards.py`)
 
 ## Дисклеймер
 
