@@ -53,7 +53,11 @@ def complete(prompt: str) -> str:
                     "Content-Type": "application/json",
                     "X-Title": "Poydem",
                 },
-                json={"model": model, "messages": [{"role": "user", "content": prompt}]},
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 1.0,  # творческая случайность → фразы различаются
+                },
                 timeout=45,
             )
             if resp.status_code == 200:
