@@ -28,3 +28,6 @@ yarn-error.log*
 .turbo
 *.tsbuildinfo
 next-env.d.ts
+
+# Материалы кейса — не публикуем
+Info/
