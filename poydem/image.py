@@ -1,13 +1,13 @@
 """
 Генерация картинки нейросетью через OpenRouter (modalities: ["image"]).
 
-Использует ТОТ ЖЕ ключ, что и текст:
-    OPENROUTER_API_KEY=...
-    OPENROUTER_IMAGE_MODEL=...   (модель-художник; выбери бесплатную, см. ниже)
+Используется ТОТ ЖЕ ключ, что и текст (OPENROUTER_API_KEY) — один ключ на всё.
+Модель — бесплатная Sourceful Riverflow (free).
 
-⚠️ Картинки на OpenRouter — это ОТДЕЛЬНЫЕ модели (вкладка Image).
-Бесплатные помечены значком подарка 🎁. Выбери бесплатную и впиши её slug
-в OPENROUTER_IMAGE_MODEL, иначе будет ошибка оплаты.
+⚠️ ВНИМАНИЕ: бесплатные Riverflow помечены на OpenRouter «Going away 9 June 2026».
+Если перестанут работать — выбери другую бесплатную модель во вкладке Image
+(значок 🎁) и впиши её в OPENROUTER_IMAGE_MODEL, либо переключись на
+Cloudflare Workers AI (FLUX) как бесплатный бэкап.
 """
 import base64
 import os
@@ -15,7 +15,7 @@ import os
 import requests
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_IMAGE_MODEL = "x-ai/grok-imagine-image-quality"
+DEFAULT_IMAGE_MODEL = "sourceful/riverflow-v2.5-fast:free"
 
 
 def generate_image(prompt: str) -> bytes:
@@ -36,7 +36,7 @@ def generate_image(prompt: str) -> bytes:
             "messages": [{"role": "user", "content": prompt}],
             "modalities": ["image"],
         },
-        timeout=60,
+        timeout=90,
     )
     if resp.status_code != 200:
         raise RuntimeError(f"OpenRouter вернул {resp.status_code}: {resp.text[:300]}")
