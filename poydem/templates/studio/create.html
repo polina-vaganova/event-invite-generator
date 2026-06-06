@@ -16,16 +16,19 @@
 <div class="mx-auto max-w-2xl px-4 py-8"
      x-data="{
        recipient: '', style: '{{ comm_styles[0].id }}',
-       message: '', loading: false, done: false,
+       cardUrl: '', cardId: '', loading: false, done: false, error: '',
        async generate(){
-         this.loading = true;
+         this.loading = true; this.error = ''; this.done = false;
          try {
-           const r = await fetch('/api/generate', {method:'POST', headers:{'Content-Type':'application/json'},
+           const r = await fetch('/api/card', {method:'POST', headers:{'Content-Type':'application/json'},
              body: JSON.stringify({event_id:'{{ event.id }}', recipient:this.recipient, style:this.style})});
-           const d = await r.json(); this.message = d.text; this.done = true;
-         } catch(e){ this.message = 'Не удалось сгенерировать текст'; this.done = true; }
+           const d = await r.json();
+           if (!r.ok) throw new Error(d.error || 'Ошибка');
+           this.cardUrl = d.url; this.cardId = d.card_id; this.done = true;
+         } catch(e){ this.error = e.message; }
          this.loading = false;
-       }
+       },
+       get cardLink(){ return window.location.origin + '/card/' + this.cardId; }
      }">
 
   <h1 class="text-2xl font-extrabold tracking-tight">Позвать красиво
@@ -68,38 +71,34 @@
     <button @click="generate()" :disabled="loading"
             class="rounded-full bg-foreground py-3 font-semibold text-background transition hover:opacity-90 disabled:opacity-60">
       <span x-show="!loading" x-text="done ? 'Сгенерировать заново' : 'Создать открытку ✨'"></span>
-      <span x-show="loading">Генерируем…</span>
+      <span x-show="loading">Создаём открытку…</span>
     </button>
-    <p class="text-center text-xs text-muted">🚧 Текст пока заглушка по стилю. Реальный ИИ — в ai.py.</p>
+    <p class="text-center text-xs text-muted" x-show="loading">
+      ИИ пишет текст и рисует картинку — это займёт ~30–40 секунд
+    </p>
+    <p class="text-center text-sm text-accent" x-show="error" x-text="error"></p>
   </div>
 
-  <!-- Результат: открытка + отправка -->
+  <!-- Результат: готовая открытка-картинка + отправка -->
   <div x-show="done" x-cloak class="mt-6 flex flex-col gap-4">
-    <!-- Открытка -->
-    <div class="relative overflow-hidden rounded-2xl p-6 text-[#14141a]" style="background:#d6f24a">
-      <div class="flex items-stretch gap-4">
-        <div class="flex flex-1 flex-col">
-          <p class="font-hand text-3xl sm:text-4xl leading-tight" x-text="message"></p>
-          <div class="mt-auto pt-4 text-sm">
-            {% if event.date %}<div>{{ event.date }}</div>{% endif %}
-            {% if event.venue %}<div class="opacity-80">{{ event.venue }}</div>{% endif %}
-            <div class="mt-1 font-bold">{{ event.title }}</div>
-          </div>
-        </div>
-        {% if event.image %}<img src="{{ event.image }}" alt="{{ event.title }}" class="h-40 w-32 shrink-0 rounded-xl object-cover" />{% endif %}
-      </div>
-    </div>
+    <h3 class="text-center font-semibold">Открытка готова! 🎉</h3>
 
-    <!-- Отправка -->
+    <!-- Сама открытка (собранная картинка) -->
+    <img :src="cardUrl" alt="Открытка" class="mx-auto w-full max-w-sm rounded-3xl shadow-lg" />
+
+    <!-- Отправка ссылки на открытку -->
     <div>
       <h3 class="text-sm font-semibold">Отправьте приглашение</h3>
+      <p class="text-xs text-muted mt-1">Друг откроет красивую открытку по ссылке</p>
       <div class="mt-2 flex flex-wrap gap-2">
-        <a :href="'https://t.me/share/url?url=' + encodeURIComponent('{{ event.sourceUrl }}') + '&text=' + encodeURIComponent(message)" target="_blank" rel="noopener"
+        <a :href="'https://t.me/share/url?url=' + encodeURIComponent(cardLink)" target="_blank" rel="noopener"
            class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Telegram</a>
-        <a :href="'https://wa.me/?text=' + encodeURIComponent(message + ' {{ event.title }}')" target="_blank" rel="noopener"
+        <a :href="'https://wa.me/?text=' + encodeURIComponent(cardLink)" target="_blank" rel="noopener"
            class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">WhatsApp</a>
-        <button @click="navigator.clipboard && navigator.clipboard.writeText(message)"
-                class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Скопировать текст</button>
+        <button @click="navigator.clipboard && navigator.clipboard.writeText(cardLink)"
+                class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Скопировать ссылку</button>
+        <a :href="cardUrl" download="card.png"
+           class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Скачать картинку</a>
       </div>
     </div>
   </div>

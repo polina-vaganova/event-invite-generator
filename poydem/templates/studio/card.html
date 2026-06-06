@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Тебя приглашают — Афиша{% endblock %}
+{% block header %}{% include "studio/_header.html" %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-md px-4 py-10 text-center">
+  <p class="text-sm text-muted mb-4">Тебе пришло приглашение ✨</p>
+
+  <!-- Сама открытка -->
+  <img src="{{ image_url }}" alt="Открытка-приглашение"
+       class="mx-auto w-full rounded-3xl shadow-lg" />
+
+  <!-- CTA обратно на событие (виральная петля) -->
+  <div class="mt-6 flex flex-col gap-3">
+    <a href="{{ event.sourceUrl or url_for('afisha.event', event_id=event.id) }}"
+       target="_blank" rel="noopener"
+       class="rounded-full px-6 py-3 font-semibold text-white"
+       style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">
+      Пойдём вместе → купить билеты
+    </a>
+    <a href="{{ url_for('afisha.event', event_id=event.id) }}"
+       class="text-sm text-accent hover:underline">Подробнее о событии</a>
+  </div>
+
+  <p class="mt-8 text-xs text-muted">
+    Открытка создана в сервисе «Позвать красиво» на Афише
+  </p>
+</div>
+{% endblock %}

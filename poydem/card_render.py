@@ -79,14 +79,23 @@ def render_card(event: dict, text: str, character_png: bytes) -> bytes:
     title_font = _font(44, 800)
     info_font = _font(30, 500)
 
-    ty = iy + 28
-    for line in _wrap(draw, event.get("title", ""), title_font, W - 2 * MARGIN)[:2]:
+    ty = iy + 26
+    for line in _wrap(draw, event.get("title", ""), title_font, W - 2 * MARGIN)[:1]:
         draw.text((MARGIN, ty), line, font=title_font, fill=DARK)
-        ty += int(title_font.size * 1.1)
+        ty += int(title_font.size * 1.05)
 
-    info = "   ·   ".join(p for p in [event.get("date"), event.get("venue")] if p)
-    if info:
-        draw.text((MARGIN, ty + 10), info, font=info_font, fill=MUTED)
+    # Дата и место — отдельными строками, каждая обрезается по ширине
+    ty += 6
+    for value in [event.get("date"), event.get("venue")]:
+        if not value:
+            continue
+        line = value
+        while draw.textlength(line, font=info_font) > W - 2 * MARGIN and len(line) > 4:
+            line = line[:-2]
+        if line != value:
+            line = line.rstrip(" ,«") + "…"
+        draw.text((MARGIN, ty), line, font=info_font, fill=MUTED)
+        ty += int(info_font.size * 1.25)
 
     out = io.BytesIO()
     canvas.convert("RGB").save(out, "PNG")
