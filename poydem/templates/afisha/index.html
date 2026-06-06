@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Афиша — события Москвы{% endblock %}
+{% block header %}{% include "afisha/_header.html" %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl px-4 py-8">
+  <section class="mb-8">
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Чем заняться в Москве</h1>
+    <p class="mt-2 text-muted">
+      Кино, концерты, спектакли и выставки. Нашли событие — позовите друга красивой открыткой.
+    </p>
+  </section>
+
+  <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for event in events %}
+      {% set label, emoji = category_label(event.category) %}
+      <a href="{{ url_for('afisha.event', event_id=event.id) }}"
+         class="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition hover:-translate-y-1 hover:shadow-lg">
+        <div class="relative aspect-[3/4] overflow-hidden bg-border">
+          {% if event.image %}
+            <img src="{{ event.image }}" alt="{{ event.title }}"
+                 class="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+          {% else %}
+            <div class="flex h-full items-center justify-center text-4xl">{{ emoji }}</div>
+          {% endif %}
+          <span class="absolute left-3 top-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium backdrop-blur">
+            {{ emoji }} {{ label }}
+          </span>
+          {% if event.rating %}
+            <span class="absolute right-3 top-3 rounded-full bg-accent px-2 py-1 text-xs font-bold text-white">{{ event.rating }}</span>
+          {% endif %}
+        </div>
+        <div class="flex flex-1 flex-col gap-1 p-4">
+          <h3 class="line-clamp-2 font-semibold leading-snug group-hover:text-accent">{{ event.title }}</h3>
+          {% set meta = [event.date, event.venue] | select | join(' · ') %}
+          {% if meta %}<p class="line-clamp-1 text-sm text-muted">{{ meta }}</p>{% endif %}
+          {% if event.price %}<p class="mt-auto pt-2 text-sm font-medium">{{ event.price }}</p>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Афиша · Позвать красиво{% endblock %}</title>
+
+  <!-- Tailwind (Play CDN — без сборки, удобно для прототипа) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: {
+          background: "var(--background)", foreground: "var(--foreground)",
+          muted: "var(--muted)", border: "var(--border)", card: "var(--card)",
+          accent: "var(--accent)", "accent-2": "var(--accent-2)", lime: "var(--lime)",
+        },
+        fontFamily: { sans: ["var(--font-inter)"], hand: ["var(--font-caveat)"] },
+      } },
+    };
+  </script>
+
+  <!-- Шрифты: Inter (основной) + Caveat (рукописный) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Alpine.js — лёгкий интерактив (шаги, живое превью), без сборки -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    :root {
+      --background:#f6f6f7; --foreground:#14141a; --muted:#76767f;
+      --border:#e7e7ea; --card:#ffffff;
+      --accent:#ff3d2e; --accent-2:#ec4899; --lime:#d6f24a;
+      --font-inter:'Inter',system-ui,sans-serif; --font-caveat:'Caveat',cursive;
+    }
+    body { background:var(--background); color:var(--foreground); font-family:var(--font-inter); }
+    .font-hand { font-family:var(--font-caveat); }
+    [x-cloak] { display:none !important; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  {% block header %}{% endblock %}
+  <main class="flex-1">{% block content %}{% endblock %}</main>
+  {% block footer %}
+  <footer class="mt-16 border-t border-border">
+    <div class="mx-auto max-w-6xl px-4 py-6 text-xs text-muted">
+      Прототип для хакатона «Креаторы и Кодеры» · кейс Afisha.ru · данные событий с
+      публичных страниц afisha.ru в учебных целях.
+    </div>
+  </footer>
+  {% endblock %}
+</body>
+</html>

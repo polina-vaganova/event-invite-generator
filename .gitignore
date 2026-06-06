@@ -1,33 +1,24 @@
-# Зависимости
-node_modules/
-.pnp
-.pnp.*
+# Виртуальное окружение Python
+.venv/
+venv/
 
-# Сборки Next.js
-.next/
-out/
-build/
-dist/
-
-# Логи
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Кэш Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
 
 # Переменные окружения (ключи ИИ и пр.)
 .env
 .env*.local
+!.env.example
+
+# Логи
+*.log
 
 # Системные файлы
 .DS_Store
 *.pem
-
-# Кэш и отладка
-.vercel
-.turbo
-*.tsbuildinfo
-next-env.d.ts
 
 # Материалы кейса — не публикуем
 Info/

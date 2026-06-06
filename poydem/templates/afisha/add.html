@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Добавить событие — Афиша{% endblock %}
+{% block header %}{% include "afisha/_header.html" %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl px-4 py-10">
+  <h1 class="text-3xl font-extrabold tracking-tight">Добавить событие</h1>
+  <p class="mt-2 text-muted">
+    Вставьте ссылку на любое событие afisha.ru — мы добавим его в каталог.
+    Так сервис работает с любым событием, а не только из подборки.
+  </p>
+
+  <form method="post" class="mt-6 flex flex-col sm:flex-row gap-3">
+    <input type="url" name="url" required placeholder="https://www.afisha.ru/concert/..."
+           class="flex-1 rounded-full border border-border px-5 py-3 outline-none focus:border-accent" />
+    <button type="submit"
+            class="rounded-full bg-accent px-6 py-3 font-semibold text-white transition hover:opacity-90">
+      Добавить
+    </button>
+  </form>
+
+  {% if error %}
+    <p class="mt-4 rounded-xl bg-accent/10 px-4 py-3 text-sm text-accent">{{ error }}</p>
+  {% endif %}
+
+  {% if added %}
+    {% set label, emoji = category_label(added.category) %}
+    <div class="mt-8">
+      <p class="mb-3 text-sm font-medium text-green-600">✓ Событие добавлено в каталог</p>
+      <a href="{{ url_for('afisha.event', event_id=added.id) }}"
+         class="flex gap-4 rounded-2xl border border-border p-4 transition hover:border-accent">
+        {% if added.image %}
+          <img src="{{ added.image }}" alt="{{ added.title }}" class="h-32 w-24 shrink-0 rounded-lg object-cover" />
+        {% endif %}
+        <div class="flex flex-col gap-1">
+          <span class="text-xs text-muted">{{ emoji }} {{ label }}</span>
+          <h3 class="font-semibold">{{ added.title }}</h3>
+          {% if added.date %}<p class="text-sm text-muted">{{ added.date }}</p>{% endif %}
+          {% if added.venue %}<p class="text-sm text-muted">{{ added.venue }}</p>{% endif %}
+          <span class="mt-1 text-sm text-accent">Открыть событие →</span>
+        </div>
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

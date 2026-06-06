@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Позвать красиво — Афиша{% endblock %}
+{% block header %}{% include "studio/_header.html" %}{% endblock %}
+
+{% block content %}
+{% if not event %}
+  <div class="mx-auto max-w-md px-4 py-24 text-center">
+    <h1 class="text-2xl font-bold">Сначала выберите событие</h1>
+    <p class="mt-2 text-muted">Откройте событие на Афише и нажмите «Позвать друга».</p>
+    <a href="{{ url_for('afisha.index') }}"
+       class="mt-6 inline-block rounded-full px-6 py-3 font-semibold text-white"
+       style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">Перейти на Афишу</a>
+  </div>
+{% else %}
+{% set meta = [event.date, event.venue] | select | join(' · ') %}
+
+<!-- Логика студии вынесена в Alpine.data (чисто, без проблем с кавычками в атрибутах) -->
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('cardStudio', () => ({
+      step: 'design',
+      styleId: {{ card_styles[0].id | tojson }},
+      bgId: {{ bg_colors[0].id | tojson }},
+      bgColors: {{ bg_colors | tojson }},
+      stickers: ['🎈'],
+      recipient: '', relationship: {{ relationships[0].id | tojson }}, tone: {{ tones[0].id | tojson }},
+      details: '', extra: '', message: '', loading: false,
+      eventId: {{ event.id | tojson }},
+      steps: [
+        {id:'design',label:'Дизайн'},{id:'details',label:'Детали'},
+        {id:'generating',label:'Генерация'},{id:'done',label:'Готово'}
+      ],
+      get bg(){ return this.bgColors.find(c => c.id === this.bgId) || this.bgColors[0]; },
+      get activeIndex(){ return this.steps.findIndex(s => s.id === this.step); },
+      toggleSticker(s){ this.stickers = this.stickers.includes(s)
+        ? this.stickers.filter(x => x !== s) : [...this.stickers, s].slice(-4); },
+      canGoTo(id){ if(id==='generating') return false; if(id==='done') return !!this.message; return true; },
+      goTo(id){ if(this.canGoTo(id) && id !== this.step) this.step = id; },
+      async generate(){
+        this.step = 'generating'; this.loading = true;
+        try {
+          const r = await fetch('/api/generate', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ event_id:this.eventId, recipient:this.recipient,
+              relationship:this.relationship, tone:this.tone, details:this.details, extra:this.extra })
+          });
+          const d = await r.json(); this.message = d.text;
+        } catch(e) { this.message = 'Не удалось сгенерировать текст'; }
+        this.loading = false; this.step = 'done';
+      },
+      shareTelegram(){ return 'https://t.me/share/url?url=' + encodeURIComponent({{ event.sourceUrl | tojson }}) + '&text=' + encodeURIComponent(this.message); },
+      shareWhatsApp(){ return 'https://wa.me/?text=' + encodeURIComponent(this.message + ' ' + {{ event.title | tojson }}); },
+    }))
+  })
+</script>
+
+<div class="mx-auto max-w-3xl px-4 py-6" x-data="cardStudio()">
+
+  <!-- Степпер -->
+  <div class="mb-6 flex flex-wrap items-center gap-3">
+    <span class="font-semibold">Позвать красиво
+      <span style="background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent">✨</span></span>
+    <span class="text-muted">→</span>
+    <ol class="flex flex-wrap items-center gap-2">
+      <template x-for="(s,i) in steps" :key="s.id">
+        <li class="flex items-center gap-2 text-sm">
+          <button type="button" @click="goTo(s.id)" :disabled="!canGoTo(s.id) || i===activeIndex"
+                  :class="(canGoTo(s.id) && i!==activeIndex) ? 'cursor-pointer hover:opacity-80' : 'cursor-default'"
+                  class="flex items-center gap-2">
+            <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+                  :class="i===activeIndex ? 'bg-foreground text-background' : (i<activeIndex ? 'bg-lime text-foreground' : 'bg-border text-muted')"
+                  x-text="i<activeIndex ? '✓' : i+1"></span>
+            <span :class="i===activeIndex ? 'font-semibold' : 'text-muted'" x-text="s.label"></span>
+          </button>
+          <span class="text-border" x-show="i < steps.length-1">·</span>
+        </li>
+      </template>
+    </ol>
+  </div>
+
+  <!-- Карточка события -->
+  <div class="flex items-center gap-4 rounded-2xl border border-border bg-card p-4">
+    {% if event.image %}<img src="{{ event.image }}" alt="{{ event.title }}" class="h-16 w-16 shrink-0 rounded-xl object-cover" />{% endif %}
+    <div class="min-w-0">
+      <div class="text-xs uppercase tracking-wide text-muted">Событие</div>
+      <div class="truncate font-semibold">{{ event.title }}</div>
+      {% if meta %}<div class="truncate text-sm text-muted">{{ meta }}</div>{% endif %}
+    </div>
+    <a href="{{ url_for('afisha.index') }}" class="ml-auto shrink-0 text-sm text-accent hover:underline">Изменить</a>
+  </div>
+
+  <div class="mt-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+
+    <!-- Шаг 1: Дизайн -->
+    <div x-show="step==='design'" class="flex flex-col gap-6">
+      <div>
+        <h2 class="font-semibold">1. Выберите стиль открытки</h2>
+        <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {% for s in card_styles %}
+            <button @click="styleId='{{ s.id }}'"
+                    :class="styleId==='{{ s.id }}' ? 'border-foreground ring-1 ring-foreground' : 'border-border hover:border-foreground/40'"
+                    class="flex flex-col items-center gap-1 rounded-xl border p-4 transition">
+              <span class="text-2xl">{{ s.emoji }}</span>
+              <span class="text-sm font-medium">{{ s.label }}</span>
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold">Цвет фона</h3>
+        <div class="mt-2 flex flex-wrap gap-3">
+          {% for c in bg_colors %}
+            <button @click="bgId='{{ c.id }}'" aria-label="{{ c.id }}"
+                    style="background-color:{{ c.hex }};width:40px;height:40px"
+                    :class="bgId==='{{ c.id }}' ? 'border-foreground ring-2 ring-foreground ring-offset-2' : 'border-black/10'"
+                    class="shrink-0 rounded-full border transition"></button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold">Дополните дизайн</h3>
+        <div class="mt-2 flex flex-wrap gap-2">
+          {% for s in stickers %}
+            <button @click="toggleSticker('{{ s }}')" style="width:44px;height:44px"
+                    :class="stickers.includes('{{ s }}') ? 'bg-lime ring-2 ring-foreground' : 'bg-background hover:bg-border'"
+                    class="flex shrink-0 items-center justify-center rounded-full text-xl transition">{{ s }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button @click="step='details'" class="w-full rounded-full bg-foreground py-3 font-semibold text-background transition hover:opacity-90">Далее</button>
+    </div>
+
+    <!-- Шаг 2: Детали -->
+    <div x-show="step==='details'" class="flex flex-col gap-5" x-cloak>
+      <h2 class="font-semibold">2. Расскажите о получателе</h2>
+
+      <label class="block"><span class="text-sm font-medium">Кого приглашаете?</span>
+        <input x-model="recipient" placeholder="Имя получателя"
+               class="mt-2 w-full rounded-xl border border-border px-4 py-3 outline-none focus:border-foreground" />
+      </label>
+
+      <label class="block"><span class="text-sm font-medium">Ваши отношения</span>
+        <div class="mt-2 flex flex-wrap gap-2">
+          {% for r in relationships %}
+            <button @click="relationship='{{ r.id }}'"
+                    :class="relationship==='{{ r.id }}' ? 'border-foreground bg-lime' : 'border-border hover:border-foreground/40'"
+                    class="rounded-full border px-4 py-2 text-sm font-medium transition">{{ r.label }}</button>
+          {% endfor %}
+        </div>
+      </label>
+
+      <label class="block"><span class="text-sm font-medium">Тон приглашения</span>
+        <div class="mt-2 flex flex-wrap gap-2">
+          {% for t in tones %}
+            <button @click="tone='{{ t.id }}'"
+                    :class="tone==='{{ t.id }}' ? 'border-foreground bg-lime' : 'border-border hover:border-foreground/40'"
+                    class="rounded-full border px-4 py-2 text-sm font-medium transition">{{ t.label }}</button>
+          {% endfor %}
+        </div>
+      </label>
+
+      <label class="block"><span class="text-sm font-medium">Что добавить в открытку?</span>
+        <textarea x-model="details" rows="2" placeholder="Напомни, что это будет лучший вечер месяца 🎉"
+                  class="mt-2 w-full resize-none rounded-xl border border-border px-4 py-3 outline-none focus:border-foreground"></textarea>
+      </label>
+
+      <label class="block"><span class="text-sm font-medium">Дополнительно (необязательно)</span>
+        <textarea x-model="extra" rows="2" placeholder="Любимые шутки, общие воспоминания, планы…"
+                  class="mt-2 w-full resize-none rounded-xl border border-border px-4 py-3 outline-none focus:border-foreground"></textarea>
+      </label>
+
+      <div class="flex gap-3">
+        <button @click="step='design'" class="rounded-full border border-border px-6 py-3 font-medium transition hover:border-foreground">Назад</button>
+        <button @click="generate()" class="flex-1 rounded-full bg-foreground py-3 font-semibold text-background transition hover:opacity-90">Создать открытку ✨</button>
+      </div>
+      <p class="text-center text-xs text-muted">🚧 Заглушка: текст генерируется по шаблону. Реальный ИИ подключается в ai.py.</p>
+    </div>
+
+    <!-- Шаг 3: Генерация -->
+    <div x-show="step==='generating'" class="flex flex-col items-center gap-4 py-16 text-center" x-cloak>
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-border" style="border-top-color:var(--foreground)"></div>
+      <p class="font-semibold">ИИ создаёт открытку…</p>
+      <p class="text-sm text-muted">Подбираем текст под тон и событие</p>
+    </div>
+
+    <!-- Шаг 4: Готово -->
+    <div x-show="step==='done'" class="flex flex-col gap-6" x-cloak>
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">3. Ваша открытка готова!</h2>
+        <button @click="generate()" class="text-sm text-accent hover:underline">↻ Сгенерировать заново</button>
+      </div>
+
+      <!-- Открытка-превью (шаблон) -->
+      <div class="relative overflow-hidden rounded-2xl p-6"
+           :style="'background:' + bg.hex" :class="bg.light ? 'text-white' : 'text-[#14141a]'">
+        <div class="absolute right-3 top-2 text-2xl" x-text="stickers.join(' ')"></div>
+        <div class="flex items-stretch gap-4">
+          <div class="flex flex-1 flex-col">
+            <p class="font-hand text-3xl sm:text-4xl leading-tight" x-text="message"></p>
+            <div class="mt-auto pt-4 text-sm">
+              {% if event.date %}<div>{{ event.date }}</div>{% endif %}
+              {% if event.venue %}<div class="opacity-80">{{ event.venue }}</div>{% endif %}
+              <div class="mt-1 font-bold">{{ event.title }}</div>
+            </div>
+          </div>
+          {% if event.image %}<img src="{{ event.image }}" alt="{{ event.title }}" class="h-40 w-32 shrink-0 rounded-xl object-cover" />{% endif %}
+        </div>
+      </div>
+
+      <!-- Шеринг -->
+      <div>
+        <h3 class="text-sm font-semibold">Отправьте приглашение</h3>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <a :href="shareTelegram()" target="_blank" rel="noopener"
+             class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Telegram</a>
+          <a :href="shareWhatsApp()" target="_blank" rel="noopener"
+             class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">WhatsApp</a>
+          <button @click="navigator.clipboard && navigator.clipboard.writeText(message)"
+                  class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Скопировать текст</button>
+        </div>
+      </div>
+
+      <div>
+        <button @click="step='details'" class="rounded-full border border-border px-6 py-3 font-medium transition hover:border-foreground">← Изменить детали</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+{% endblock %}
