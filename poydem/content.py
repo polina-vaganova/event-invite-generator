@@ -1,12 +1,13 @@
 """
-Справочники и заглушки контента: категории событий, стили открытки, цвета,
-тон приглашения, а также ЗАГЛУШКА генерации текста (вместо ИИ).
+Справочники и заглушка текста открытки.
 
-Когда подключите ИИ — замените draft_message() на вызов модели в ai.py,
-остальной код и шаблоны не изменятся.
+По кейсу нужен минимум: получатель + стиль коммуникации. Стили названы
+ровно как в кейсе: романтичный, дружеский, семейный, шуточный.
+
+Когда подключите ИИ — замените draft_message() на вызов модели в ai.py.
 """
 
-# --- Категории событий Афиши ---
+# --- Категории событий Афиши (для подписей в каталоге) ---
 CATEGORY_LABELS = {
     "movie": ("Кино", "🎬"),
     "concert": ("Концерт", "🎵"),
@@ -22,55 +23,26 @@ def category_label(category: str) -> tuple[str, str]:
     return CATEGORY_LABELS.get(category, ("Событие", "✨"))
 
 
-# --- Шаг 1: стиль открытки ---
-CARD_STYLES = [
-    {"id": "festive", "label": "Праздничный", "emoji": "🎂"},
-    {"id": "minimal", "label": "Минимализм", "emoji": "⚪"},
-    {"id": "meme", "label": "Мемный", "emoji": "⭐"},
-    {"id": "tender", "label": "Нежный", "emoji": "☁️"},
-]
-
-# Цвета фона открытки. light=True → фон тёмный, текст белый.
-BG_COLORS = [
-    {"id": "lime", "hex": "#d6f24a", "light": False},
-    {"id": "gray", "hex": "#e6e6e9", "light": False},
-    {"id": "purple", "hex": "#7c3aed", "light": True},
-    {"id": "blue", "hex": "#4f7df0", "light": True},
-    {"id": "olive", "hex": "#9aa86a", "light": False},
-    {"id": "peach", "hex": "#f3c8a6", "light": False},
-    {"id": "lavender", "hex": "#d9c9f2", "light": False},
-]
-
-STICKERS = ["🎈", "💜", "⭐", "☁️", "🎉", "🎂", "💚", "✨", "🔥", "🥂"]
-
-# --- Шаг 2: отношения и тон ---
-RELATIONSHIPS = [
-    {"id": "friends", "label": "Друзья", "emoji": "🤝"},
-    {"id": "couple", "label": "Пара", "emoji": "💕"},
-    {"id": "colleagues", "label": "Коллеги", "emoji": "💼"},
-    {"id": "family", "label": "Семья", "emoji": "🏡"},
-]
-
-TONES = [
-    {"id": "fun", "label": "Весёлый", "emoji": "😄"},
-    {"id": "warm", "label": "Тёплый", "emoji": "🤗"},
+# --- Стиль коммуникации (дословно из кейса) ---
+COMM_STYLES = [
     {"id": "romantic", "label": "Романтичный", "emoji": "💕"},
-    {"id": "creative", "label": "Креативный", "emoji": "🎨"},
+    {"id": "friendly", "label": "Дружеский", "emoji": "🤝"},
+    {"id": "family", "label": "Семейный", "emoji": "🏡"},
+    {"id": "funny", "label": "Шуточный", "emoji": "😄"},
 ]
 
 
-def draft_message(recipient: str, tone: str) -> str:
+def draft_message(recipient: str, style: str) -> str:
     """
-    ЗАГЛУШКА генерации текста открытки под выбранный тон.
+    ЗАГЛУШКА генерации текста открытки под выбранный стиль коммуникации.
 
-    TODO (команда): заменить на вызов ИИ в ai.py — учесть получателя,
-    отношения, событие и доп. пожелания.
+    TODO (команда): заменить на вызов ИИ в ai.py.
     """
     name = (recipient or "").strip() or "Привет"
-    by_tone = {
-        "fun": f"{name}! Празднуем это так, как ты любишь — громко, душевно и до утра! 🎉",
-        "warm": f"{name}, давно хотел позвать тебя. Будет тепло и по-нашему 💛",
+    by_style = {
         "romantic": f"{name}, проведём этот вечер вдвоём? Только ты и я ✨",
-        "creative": f"{name}, у меня идея на вечер — и без тебя она не считается 🚀",
+        "friendly": f"{name}, есть планы? Пойдём вместе — будет здорово! 🎉",
+        "family": f"{name}, давай сходим всей семьёй? Будет тепло и по-нашему 💛",
+        "funny": f"{name}, бросай всё — нас ждёт нечто эпичное! 🚀",
     }
-    return by_tone.get(tone, by_tone["fun"])
+    return by_style.get(style, by_style["friendly"])

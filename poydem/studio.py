@@ -19,11 +19,7 @@ def create():
     return render_template(
         "studio/create.html",
         event=event,
-        card_styles=content.CARD_STYLES,
-        bg_colors=content.BG_COLORS,
-        stickers=content.STICKERS,
-        relationships=content.RELATIONSHIPS,
-        tones=content.TONES,
+        comm_styles=content.COMM_STYLES,
     )
 
 
@@ -31,7 +27,7 @@ def create():
 def api_generate():
     """
     Генерация текста открытки.
-    Тело: { event_id, recipient, relationship, tone, details, extra }
+    Тело: { event_id, recipient, style }
     Возвращает: { text }
     """
     data = request.get_json(silent=True) or {}
@@ -39,9 +35,6 @@ def api_generate():
     text = ai.generate_card_text(
         event=event,
         recipient=data.get("recipient", ""),
-        relationship=data.get("relationship", ""),
-        tone=data.get("tone", ""),
-        details=data.get("details", ""),
-        extra=data.get("extra", ""),
+        style=data.get("style", ""),
     )
     return jsonify({"text": text})
