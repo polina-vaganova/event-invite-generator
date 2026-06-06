@@ -8,6 +8,7 @@
 
 Возвращает байты PNG.
 """
+import ast
 import io
 from pathlib import Path
 
@@ -29,6 +30,32 @@ def _font(size: int, weight: int = 700) -> ImageFont.FreeTypeFont:
     except Exception:  # noqa: BLE001 — если веса недоступны, берём как есть
         pass
     return f
+
+
+def _as_list(value) -> list[str]:
+    """Жанры могут лежать строкой-репром списка — приводим к списку строк."""
+    if isinstance(value, (list, tuple)):
+        return [str(x) for x in value]
+    if isinstance(value, str) and value.strip().startswith("["):
+        try:
+            return [str(x) for x in ast.literal_eval(value)]
+        except Exception:  # noqa: BLE001
+            pass
+    return [value] if value else []
+
+
+def _meta_lines(event: dict) -> list[str]:
+    """До двух строк под названием: дата/место (события) или жанры/длительность (кино)."""
+    if event.get("date") or event.get("venue"):
+        return [v for v in [event.get("date"), event.get("venue")] if v][:2]
+    lines = []
+    genres = _as_list(event.get("genres"))
+    if genres:
+        lines.append("  ·  ".join(genres))
+    tail = "  ·  ".join(str(v) for v in [event.get("duration"), event.get("price")] if v)
+    if tail:
+        lines.append(tail)
+    return lines[:2]
 
 
 def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[str]:
@@ -84,11 +111,9 @@ def render_card(event: dict, text: str, character_png: bytes) -> bytes:
         draw.text((MARGIN, ty), line, font=title_font, fill=DARK)
         ty += int(title_font.size * 1.05)
 
-    # Дата и место — отдельными строками, каждая обрезается по ширине
+    # Доп. инфо — отдельными строками, каждая обрезается по ширине
     ty += 6
-    for value in [event.get("date"), event.get("venue")]:
-        if not value:
-            continue
+    for value in _meta_lines(event):
         line = value
         while draw.textlength(line, font=info_font) > W - 2 * MARGIN and len(line) > 4:
             line = line[:-2]
