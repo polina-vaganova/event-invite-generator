@@ -161,12 +161,6 @@
         </button>
 
         <div class="mt-3 flex flex-wrap gap-2">
-          <a :href="'https://vk.com/share.php?url=' + encodeURIComponent(cardLink)" target="_blank" rel="noopener"
-             class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">ВКонтакте</a>
-          <a :href="'https://t.me/share/url?url=' + encodeURIComponent(cardLink)" target="_blank" rel="noopener"
-             class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">Telegram</a>
-          <a :href="'https://wa.me/?text=' + encodeURIComponent(cardLink)" target="_blank" rel="noopener"
-             class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground">WhatsApp</a>
           <button @click="copy()"
                   class="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-foreground"
                   x-text="copied ? 'Скопировано ✓' : 'Скопировать ссылку'"></button>
