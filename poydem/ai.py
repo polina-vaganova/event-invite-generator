@@ -47,6 +47,37 @@ def build_prompt(event: dict, recipient: str, style: str) -> str:
     )
 
 
+# Базовый визуал под категорию события (для картинки).
+CATEGORY_VISUAL = {
+    "movie": "cinematic movie scene, dramatic lighting",
+    "concert": "vibrant concert stage, bright lights, energetic crowd",
+    "performance": "elegant theatre stage, red curtains, spotlight",
+    "exhibition": "art gallery interior, paintings on walls, refined atmosphere",
+    "restaurant": "cozy restaurant table, warm candle light, fine dining",
+}
+
+# Настроение под стиль коммуникации (для картинки).
+STYLE_MOOD = {
+    "friendly": "fun and warm inviting mood",
+    "romantic": "romantic soft intimate mood",
+    "family": "cozy heartwarming family-friendly mood",
+    "funny": "playful quirky humorous mood",
+}
+
+
+def build_image_prompt(event: dict, style: str) -> str:
+    """
+    Собирает АНГЛИЙСКИЙ промпт для нейросети-художника (FLUX).
+    Без текста на картинке — буквы модель рисует плохо.
+    """
+    base = CATEGORY_VISUAL.get(event.get("category"), "festive event scene")
+    mood = STYLE_MOOD.get(style, STYLE_MOOD["friendly"])
+    return (
+        f"{base}, {mood}, greeting card illustration, vivid colors, "
+        "high quality, no text, no letters"
+    )
+
+
 def generate_card_text(event: dict, recipient: str, style: str) -> str:
     """
     Возвращает текст открытки.
