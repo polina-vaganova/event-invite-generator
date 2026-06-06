@@ -16,35 +16,55 @@ import requests
 
 from . import content
 
+import time
+
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "qwen/qwen3-next-80b-a3b-instruct:free"
+DEFAULT_MODEL = "google/gemma-4-31b-it:free"
+
+# Запасные модели на случай, если основная перегружена (429).
+# Бесплатные модели OpenRouter часто заняты — фолбэк делает текст надёжным.
+FALLBACK_MODELS = [
+    "z-ai/glm-4.5-air:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+]
 
 
 # ---------- Вызов LLM ----------
 def complete(prompt: str) -> str:
     """
     Отправляет промпт в OpenRouter и возвращает текст ответа.
-    Бросает понятную ошибку, если нет ключа или API не ответил.
+    Пробует основную модель, при перегрузке (429) — ретраи и запасные модели.
     """
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise RuntimeError("Нет ключа OpenRouter. Задайте OPENROUTER_API_KEY в .env")
 
-    model = os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL)
-    resp = requests.post(
-        OPENROUTER_URL,
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "X-Title": "Poydem",
-        },
-        json={"model": model, "messages": [{"role": "user", "content": prompt}]},
-        timeout=40,
-    )
-    if resp.status_code != 200:
-        raise RuntimeError(f"OpenRouter вернул {resp.status_code}: {resp.text[:300]}")
-    data = resp.json()
-    return data["choices"][0]["message"]["content"].strip()
+    primary = os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL)
+    models = [primary] + [m for m in FALLBACK_MODELS if m != primary]
+    last_error = "неизвестно"
+
+    for model in models:
+        for _ in range(2):  # ретрай на 429
+            resp = requests.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                    "X-Title": "Poydem",
+                },
+                json={"model": model, "messages": [{"role": "user", "content": prompt}]},
+                timeout=45,
+            )
+            if resp.status_code == 200:
+                return resp.json()["choices"][0]["message"]["content"].strip()
+            last_error = f"{resp.status_code}: {resp.text[:200]}"
+            if resp.status_code == 429:
+                time.sleep(2)
+                continue
+            break  # не-429 ошибка → пробуем следующую модель
+
+    raise RuntimeError(f"OpenRouter недоступен ({last_error})")
 
 
 # ---------- Промпт для текста ----------
