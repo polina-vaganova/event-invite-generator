@@ -25,8 +25,8 @@ def category_label(category: str) -> tuple[str, str]:
 
 # --- Стиль коммуникации (дословно из кейса) ---
 COMM_STYLES = [
-    {"id": "romantic", "label": "Романтичный", "emoji": "💕"},
     {"id": "friendly", "label": "Дружеский", "emoji": "🤝"},
+    {"id": "romantic", "label": "Романтичный", "emoji": "💕"},
     {"id": "family", "label": "Семейный", "emoji": "🏡"},
     {"id": "funny", "label": "Шуточный", "emoji": "😄"},
 ]
