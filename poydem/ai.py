@@ -17,7 +17,7 @@ import requests
 from . import content
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+DEFAULT_MODEL = "qwen/qwen3-next-80b-a3b-instruct:free"
 
 
 # ---------- Вызов LLM ----------
