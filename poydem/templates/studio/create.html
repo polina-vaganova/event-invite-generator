@@ -17,6 +17,8 @@
      x-data="{
        recipient: '', style: '{{ comm_styles[0].id }}',
        cardUrl: '', cardId: '', loading: false, done: false, error: '',
+       colors: [], color: 'pink', bust: 0,
+       colorHex: {pink:'#F7E7F0', lavender:'#EBE6F8', mint:'#DFF2E8', peach:'#FBE9DA', sky:'#E0EDFA', lemon:'#F6F2D0'},
        async generate(){
          this.loading = true; this.error = ''; this.done = false;
          try {
@@ -24,10 +26,19 @@
              body: JSON.stringify({event_id:'{{ event.id }}', recipient:this.recipient, style:this.style})});
            const d = await r.json();
            if (!r.ok) throw new Error(d.error || 'Ошибка');
-           this.cardUrl = d.url; this.cardId = d.card_id; this.done = true;
+           this.cardUrl = d.url; this.cardId = d.card_id; this.colors = d.colors || [];
+           this.color = 'pink'; this.bust = 0; this.done = true;
          } catch(e){ this.error = e.message; }
          this.loading = false;
        },
+       async recolor(c){
+         try {
+           const r = await fetch('/api/recolor', {method:'POST', headers:{'Content-Type':'application/json'},
+             body: JSON.stringify({card_id:this.cardId, color:c})});
+           if (r.ok){ this.color = c; this.bust++; }
+         } catch(e){}
+       },
+       get cardSrc(){ return this.cardUrl + '?t=' + this.bust; },
        get cardLink(){ return window.location.origin + '/card/' + this.cardId; }
      }">
 
@@ -84,7 +95,20 @@
     <h3 class="text-center font-semibold">Открытка готова! 🎉</h3>
 
     <!-- Сама открытка (собранная картинка) -->
-    <img :src="cardUrl" alt="Открытка" class="mx-auto w-full max-w-sm rounded-3xl shadow-lg" />
+    <img :src="cardSrc" alt="Открытка" class="mx-auto w-full max-w-sm rounded-3xl shadow-lg" />
+
+    <!-- Выбор цвета фона (пересборка без новой генерации) -->
+    <div class="flex flex-col items-center gap-2">
+      <span class="text-sm font-medium text-muted">Цвет фона</span>
+      <div class="flex gap-2">
+        <template x-for="c in colors" :key="c">
+          <button @click="recolor(c)"
+                  :style="'background:'+colorHex[c]"
+                  :class="color===c ? 'ring-2 ring-foreground ring-offset-2' : ''"
+                  class="h-8 w-8 rounded-full border border-border transition"></button>
+        </template>
+      </div>
+    </div>
 
     <!-- Отправка ссылки на открытку -->
     <div>

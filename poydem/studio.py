@@ -84,19 +84,46 @@ def api_card():
     except Exception as err:  # noqa: BLE001
         return jsonify({"error": str(err)}), 502
 
-    # сохраняем картинку файлом + строку в БД
+    # сохраняем картинку + персонажа (для пересборки с другим фоном) + строку в БД
     card_id = cards.new_card_id()
     cards_dir = Path(current_app.static_folder) / "cards"
     cards_dir.mkdir(parents=True, exist_ok=True)
     filename = f"{card_id}.png"
     (cards_dir / filename).write_bytes(card_png)
+    (cards_dir / f"{card_id}_char.png").write_bytes(character)  # прозрачный персонаж
     cards.save_card(card_id, event["id"], recipient, style, text, filename)
 
     return jsonify({
         "card_id": card_id,
         "url": url_for("static", filename=f"cards/{filename}"),
         "text": text,
+        "colors": list(card_render.PALETTE.keys()),
     })
+
+
+@bp.post("/api/recolor")
+def api_recolor():
+    """
+    Пересобрать готовую открытку с другим фоном — БЕЗ повторной генерации ИИ.
+    Тело: { card_id, color }
+    Возвращает: { url }
+    """
+    data = request.get_json(silent=True) or {}
+    item = cards.get_card(data.get("card_id"))
+    if not item:
+        return jsonify({"error": "Открытка не найдена"}), 404
+
+    cards_dir = Path(current_app.static_folder) / "cards"
+    char_path = cards_dir / f"{item['id']}_char.png"
+    if not char_path.exists():
+        return jsonify({"error": "Нет исходного персонажа"}), 404
+
+    event = store.get_event(item["event_id"]) or {}
+    card_png = card_render.render_card(
+        event, item["message"], char_path.read_bytes(), bg=data.get("color", "pink"),
+    )
+    (cards_dir / item["image_file"]).write_bytes(card_png)
+    return jsonify({"url": url_for("static", filename=f"cards/{item['image_file']}")})
 
 
 @bp.get("/card/<card_id>")

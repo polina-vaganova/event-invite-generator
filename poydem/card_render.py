@@ -18,9 +18,19 @@ FONT_PATH = Path(__file__).parent / "static" / "fonts" / "Montserrat.ttf"
 
 W, H = 1024, 1280
 MARGIN = 70
-BG = (247, 231, 240)        # нежно-розовый пастельный фон
 DARK = (30, 25, 40)         # основной тёмный текст
-MUTED = (110, 95, 120)      # приглушённый текст (дата/место)
+MUTED = (90, 80, 95)        # приглушённый текст (дата/место)
+
+# Палитра пастельных фонов (выбор пользователя после генерации)
+PALETTE = {
+    "pink":     (247, 231, 240),
+    "lavender": (235, 230, 248),
+    "mint":     (223, 242, 232),
+    "peach":    (251, 233, 218),
+    "sky":      (224, 237, 250),
+    "lemon":    (246, 242, 208),
+}
+DEFAULT_BG = "pink"
 
 
 def _font(size: int, weight: int = 700) -> ImageFont.FreeTypeFont:
@@ -73,9 +83,10 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[st
     return lines
 
 
-def render_card(event: dict, text: str, character_png: bytes) -> bytes:
+def render_card(event: dict, text: str, character_png: bytes, bg: str = DEFAULT_BG) -> bytes:
     """Собирает открытку: фраза + персонаж + инфо события → PNG."""
-    canvas = Image.new("RGBA", (W, H), BG + (255,))
+    color = PALETTE.get(bg, PALETTE[DEFAULT_BG])
+    canvas = Image.new("RGBA", (W, H), color + (255,))
     draw = ImageDraw.Draw(canvas)
 
     # --- Фраза сверху ---
