@@ -47,10 +47,22 @@
            } catch(e){}
          },
          copied: false,
+         get shareText(){ return (this.recipient ? this.recipient + ', ' : '') + 'тебя зовут на «' + {{ event.title|tojson }} + '» ✨'; },
          async share(){
-           const data = { title: 'Приглашение', text: 'Тебя зовут на событие ✨', url: this.cardLink };
-           if (navigator.share){ try { await navigator.share(data); } catch(e){} }
-           else { this.copy(); }
+           const text = this.shareText;
+           // 1) пробуем отправить САМУ картинку-открытку файлом (телефоны)
+           try {
+             const blob = await (await fetch(this.cardSrc)).blob();
+             const file = new File([blob], 'priglashenie.png', {type:'image/png'});
+             if (navigator.canShare && navigator.canShare({files:[file]})){
+               await navigator.share({ title:'Приглашение', text: text + ' ' + this.cardLink, files:[file] });
+               return;
+             }
+           } catch(e){}
+           // 2) иначе делимся ссылкой на открытку (там и картинка, и переход на событие)
+           if (navigator.share){ try { await navigator.share({ title:'Приглашение', text, url:this.cardLink }); return; } catch(e){} }
+           // 3) совсем нет шеринга — копируем ссылку
+           this.copy();
          },
          copy(){
            if (navigator.clipboard){ navigator.clipboard.writeText(this.cardLink);
