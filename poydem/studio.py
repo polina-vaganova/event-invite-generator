@@ -4,11 +4,25 @@ Blueprint студии открыток (наш продукт).
   • GET  /create?event=<id>  — экран создания открытки (получает событие по ID)
   • POST /api/generate       — генерация текста открытки (сейчас заглушка, потом ИИ)
 """
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, Response
 
-from . import store, content, ai
+from . import store, content, ai, image
 
 bp = Blueprint("studio", __name__)
+
+
+@bp.get("/api/test-image")
+def api_test_image():
+    """
+    Проверка ключей Cloudflare: рисует картинку по ?prompt=... и отдаёт её.
+    Пример: /api/test-image?prompt=festive concert neon vibrant
+    """
+    prompt = request.args.get("prompt", "festive concert invitation, vibrant, no text")
+    try:
+        img = image.generate_image(prompt)
+        return Response(img, mimetype="image/jpeg")
+    except Exception as err:  # noqa: BLE001
+        return jsonify({"error": str(err)}), 502
 
 
 @bp.get("/create")
