@@ -42,6 +42,21 @@ def _font(size: int, weight: int = 700) -> ImageFont.FreeTypeFont:
     return f
 
 
+def _mix(c, other, t: float) -> tuple:
+    """Смешивает цвет c с other на долю t (0..1)."""
+    return tuple(int(c[i] + (other[i] - c[i]) * t) for i in range(3))
+
+
+def _gradient_bg(color: tuple) -> Image.Image:
+    """Мягкий вертикальный градиент-перелив: светлее сверху, чуть глубже снизу."""
+    top = _mix(color, (255, 255, 255), 0.28)     # светлее
+    bottom = _mix(color, (40, 30, 55), 0.10)      # чуть насыщеннее/глубже
+    base = Image.new("RGB", (W, H), top)
+    deep = Image.new("RGB", (W, H), bottom)
+    mask = Image.linear_gradient("L").resize((W, H))  # 0 сверху → 255 снизу
+    return Image.composite(deep, base, mask)
+
+
 def _as_list(value) -> list[str]:
     """Жанры могут лежать строкой-репром списка — приводим к списку строк."""
     if isinstance(value, (list, tuple)):
@@ -86,7 +101,7 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[st
 def render_card(event: dict, text: str, character_png: bytes, bg: str = DEFAULT_BG) -> bytes:
     """Собирает открытку: фраза + персонаж + инфо события → PNG."""
     color = PALETTE.get(bg, PALETTE[DEFAULT_BG])
-    canvas = Image.new("RGBA", (W, H), color + (255,))
+    canvas = _gradient_bg(color).convert("RGBA")  # фон с мягким переливом
     draw = ImageDraw.Draw(canvas)
 
     # --- Фраза сверху ---

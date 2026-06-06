@@ -137,4 +137,12 @@ def card(card_id: str):
         abort(404)
     event = store.get_event(item["event_id"]) or {}
     image_url = url_for("static", filename=f"cards/{item['image_file']}")
-    return render_template("studio/card.html", card=item, event=event, image_url=image_url)
+    return render_template(
+        "studio/card.html",
+        card=item,
+        event=event,
+        image_url=image_url,
+        # абсолютные URL для OG-превью в соцсетях/мессенджерах
+        image_abs=url_for("static", filename=f"cards/{item['image_file']}", _external=True),
+        page_abs=url_for("studio.card", card_id=item["id"], _external=True),
+    )
