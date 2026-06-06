@@ -56,10 +56,22 @@ def remove_background(img_bytes: bytes) -> bytes:
     """
     Убирает фон у картинки → прозрачный PNG (через rembg, локально, бесплатно).
     При первом запуске rembg скачает модель (~170 МБ), дальше работает офлайн.
+
+    Защита: если светлый персонаж на светлом фоне и rembg вырезал почти всё —
+    возвращаем исходную картинку (лучше видимый персонаж, чем пустая открытка).
     """
+    import io
+
+    from PIL import Image
     from rembg import remove  # ленивый импорт — библиотека тяжёлая
 
-    return remove(img_bytes)
+    cut = remove(img_bytes, post_process_mask=True)
+    im = Image.open(io.BytesIO(cut)).convert("RGBA")
+    # доля непрозрачных пикселей (alpha > ~40)
+    opaque = sum(im.getchannel("A").histogram()[40:])
+    if opaque < 0.04 * im.width * im.height:
+        return img_bytes  # вырезалось почти всё → отдаём оригинал
+    return cut
 
 
 def generate_card_image(prompt: str) -> bytes:
