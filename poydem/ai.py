@@ -97,8 +97,18 @@ def build_prompt(event: dict, recipient: str, style: str) -> str:
         "- варианты разных тонов должны явно отличаться по настроению;\n"
         "- НЕ пиши дату, время, место и название — они будут отдельно;\n"
         "- БЕЗ эмодзи и смайликов;\n"
-        "- верни ТОЛЬКО фразу — без пояснений, заголовков и кавычек.\n"
+        "- ОДНА-ЕДИНСТВЕННАЯ фраза — НЕ список, НЕ несколько вариантов, без переносов строк;\n"
+        "- верни ТОЛЬКО эту фразу — без пояснений, заголовков и кавычек.\n"
     )
+
+
+def _one_phrase(text: str) -> str:
+    """Берёт одну фразу: первую непустую строку, без кавычек и маркеров списка."""
+    for raw in (text or "").splitlines():
+        line = raw.strip().lstrip("-•*0123456789.) ").strip(' "«»\'')
+        if line:
+            return line
+    return (text or "").strip()
 
 
 def generate_card_text(event: dict, recipient: str, style: str) -> str:
@@ -108,7 +118,7 @@ def generate_card_text(event: dict, recipient: str, style: str) -> str:
     """
     if os.environ.get("OPENROUTER_API_KEY"):
         try:
-            return complete(build_prompt(event, recipient, style))
+            return _one_phrase(complete(build_prompt(event, recipient, style)))
         except Exception:  # noqa: BLE001 — на демо не падаем, откатываемся на заглушку
             pass
     return content.draft_message(recipient, style)
