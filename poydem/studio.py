@@ -25,6 +25,25 @@ def api_test_image():
         return jsonify({"error": str(err)}), 502
 
 
+@bp.get("/api/test-text")
+def api_test_text():
+    """
+    Проверка ключа OpenRouter: генерит текст приглашения и отдаёт его.
+    Пример: /api/test-text?recipient=Аня&style=friendly&event=6014552
+    """
+    event = store.get_event(request.args.get("event", "")) or {
+        "title": "Баста",
+        "date": "29 августа 2026, 19:00",
+        "venue": "Лужники",
+    }
+    try:
+        prompt = ai.build_prompt(event, request.args.get("recipient", "Аня"),
+                                 request.args.get("style", "friendly"))
+        return jsonify({"text": ai.complete(prompt)})
+    except Exception as err:  # noqa: BLE001
+        return jsonify({"error": str(err)}), 502
+
+
 @bp.get("/create")
 def create():
     """Студия открытки. Событие берётся по ID — как из API Афиши."""

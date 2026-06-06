@@ -1,15 +1,53 @@
 """
-ИИ-генерация текста открытки.
+ИИ-генерация текста открытки через OpenRouter (бесплатные модели LLM).
 
-СЕЙЧАС generate_card_text() — заглушка (content.draft_message).
-Промпт для модели уже готов: build_prompt(). Команде остаётся подставить
-вызов LLM в generate_card_text() — промпт менять не нужно.
+Нужен ключ в .env:
+    OPENROUTER_API_KEY=...
+    OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct:free   (опционально)
+
+Как получить ключ: https://openrouter.ai → Sign in → Keys → Create Key.
+Бесплатные модели ищи на https://openrouter.ai/models (фильтр «Free»).
 
 Картинку рисует ОТДЕЛЬНАЯ функция — image.generate_image() (см. poydem/image.py).
 """
+import os
+
+import requests
+
 from . import content
 
-# Описание тона под каждый стиль коммуникации (из кейса).
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free"
+
+
+# ---------- Вызов LLM ----------
+def complete(prompt: str) -> str:
+    """
+    Отправляет промпт в OpenRouter и возвращает текст ответа.
+    Бросает понятную ошибку, если нет ключа или API не ответил.
+    """
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if not key:
+        raise RuntimeError("Нет ключа OpenRouter. Задайте OPENROUTER_API_KEY в .env")
+
+    model = os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL)
+    resp = requests.post(
+        OPENROUTER_URL,
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "X-Title": "Poydem",
+        },
+        json={"model": model, "messages": [{"role": "user", "content": prompt}]},
+        timeout=40,
+    )
+    if resp.status_code != 200:
+        raise RuntimeError(f"OpenRouter вернул {resp.status_code}: {resp.text[:300]}")
+    data = resp.json()
+    return data["choices"][0]["message"]["content"].strip()
+
+
+# ---------- Промпт для текста ----------
 STYLE_GUIDE = {
     "friendly": "по-дружески, на «ты», тепло и непринуждённо, с лёгким задором — как зовёшь близкого друга",
     "romantic": "романтично, на «ты», нежно и чувственно, с лёгким флиртом — как зовёшь любимого человека",
@@ -19,15 +57,10 @@ STYLE_GUIDE = {
 
 
 def build_prompt(event: dict, recipient: str, style: str) -> str:
-    """
-    Собирает промпт для LLM из события, получателя и стиля.
-    Возвращает готовую строку-инструкцию для модели.
-    """
+    """Собирает промпт для LLM из события, получателя и стиля."""
     title = event.get("title", "событие")
     name = (recipient or "").strip() or "друг"
     tone = STYLE_GUIDE.get(style, STYLE_GUIDE["friendly"])
-
-    # Дату и место подставляем, только если они есть (не выдумываем).
     details = ", ".join(p for p in [event.get("date"), event.get("venue")] if p)
     when_where = f" ({details})" if details else ""
 
@@ -47,16 +80,25 @@ def build_prompt(event: dict, recipient: str, style: str) -> str:
     )
 
 
-# ============================================================
-# ЗДЕСЬ КОМАНДА ОПРЕДЕЛЯЕТ, КАК СОБИРАТЬ КАРТИНКУ
-# ============================================================
-# Это место для ВАШЕЙ логики: как промпт картинки зависит от
-#   • ваших предпочтений (стиль, цвета, настроение — пропишете);
-#   • события (категория, название, жанры — как именно связывать, решите вы).
-# Ниже — простой РАБОЧИЙ пример-заглушка, чтобы код запускался.
-# Замените словари/логику на свои правила, когда определитесь.
+def generate_card_text(event: dict, recipient: str, style: str) -> str:
+    """
+    Текст открытки. Если есть ключ OpenRouter — зовёт LLM,
+    иначе (или при ошибке) — заглушка по стилю, чтобы продукт не падал.
+    """
+    if os.environ.get("OPENROUTER_API_KEY"):
+        try:
+            return complete(build_prompt(event, recipient, style))
+        except Exception:  # noqa: BLE001 — на демо не падаем, откатываемся на заглушку
+            pass
+    return content.draft_message(recipient, style)
 
-# Пример: базовый визуал под категорию события.
+
+# ============================================================
+# ПРОМПТ ДЛЯ КАРТИНКИ — место для логики команды
+# ============================================================
+# Здесь команда задаёт, как картинка зависит от ваших предпочтений и события.
+# Ниже — простой рабочий пример-заглушка, замените на свои правила.
+
 CATEGORY_VISUAL = {
     "movie": "cinematic movie scene, dramatic lighting",
     "concert": "vibrant concert stage, bright lights, energetic crowd",
@@ -65,7 +107,6 @@ CATEGORY_VISUAL = {
     "restaurant": "cozy restaurant table, warm candle light, fine dining",
 }
 
-# Пример: настроение под стиль коммуникации.
 STYLE_MOOD = {
     "friendly": "fun and warm inviting mood",
     "romantic": "romantic soft intimate mood",
@@ -76,31 +117,14 @@ STYLE_MOOD = {
 
 def build_image_prompt(event: dict, style: str) -> str:
     """
-    Собирает АНГЛИЙСКИЙ промпт для нейросети-художника (FLUX).
-    Без текста на картинке — буквы модель рисует плохо.
+    АНГЛИЙСКИЙ промпт для нейросети-художника (FLUX). Без текста на картинке.
 
-    TODO (команда): заменить тело на свою логику — как именно картинка
-    должна зависеть от ваших предпочтений и от события. Сигнатуру можно
-    расширить (например, добавить выбор палитры/стиля картинки).
+    TODO (команда): заменить тело на свою логику — как картинка зависит от
+    предпочтений и события. Сигнатуру можно расширить.
     """
-    # --- ПРИМЕР-ЗАГЛУШКА (замените на свои правила) ---
     base = CATEGORY_VISUAL.get(event.get("category"), "festive event scene")
     mood = STYLE_MOOD.get(style, STYLE_MOOD["friendly"])
     return (
         f"{base}, {mood}, greeting card illustration, vivid colors, "
         "high quality, no text, no letters"
     )
-
-
-def generate_card_text(event: dict, recipient: str, style: str) -> str:
-    """
-    Возвращает текст открытки.
-
-    TODO (команда): заменить заглушку на вызов LLM.
-    Промпт уже готов — build_prompt(). Пример (псевдокод):
-
-        prompt = build_prompt(event, recipient, style)
-        return call_llm(prompt).strip()   # ваш вызов Gemini / Cloudflare / ...
-    """
-    # --- ЗАГЛУШКА (пока без модели) ---
-    return content.draft_message(recipient, style)

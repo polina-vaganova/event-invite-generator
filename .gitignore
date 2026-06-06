@@ -23,3 +23,5 @@ __pycache__/
 # Материалы кейса — не публикуем
 Info/
 poydem/static/cards/*.png
+test_cloudflare.py
+test_openrouter.py
