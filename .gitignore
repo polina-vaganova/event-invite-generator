@@ -1,0 +1,30 @@
+# Зависимости
+node_modules/
+.pnp
+.pnp.*
+
+# Сборки Next.js
+.next/
+out/
+build/
+dist/
+
+# Логи
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Переменные окружения (ключи ИИ и пр.)
+.env
+.env*.local
+
+# Системные файлы
+.DS_Store
+*.pem
+
+# Кэш и отладка
+.vercel
+.turbo
+*.tsbuildinfo
+next-env.d.ts

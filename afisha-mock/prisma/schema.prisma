@@ -1,0 +1,33 @@
+// Схема БД мини-Афиши.
+// Одна таблица — каталог событий. Поля повторяют контракт AfishaEvent.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id            String   @id // числовой ID события из URL афиши
+  slug          String
+  sourceUrl     String
+  category      String
+  title         String
+  originalTitle String?
+  image         String?
+  description   String?
+  genres        String[] // массив жанров (нативный тип Postgres)
+  date          String?
+  country       String?
+  duration      String?
+  ageRating     String?
+  director      String?
+  venue         String?
+  price         String?
+  rating        String?
+  parsedAt      DateTime // когда событие спарсено
+  createdAt     DateTime @default(now()) // когда добавлено в каталог
+}
