@@ -17,10 +17,10 @@ def api_test_image():
     Проверка ключей Cloudflare: рисует картинку по ?prompt=... и отдаёт её.
     Пример: /api/test-image?prompt=festive concert neon vibrant
     """
-    prompt = request.args.get("prompt", "festive concert invitation, vibrant, no text")
+    prompt = request.args.get("prompt", "cute mascot character, sticker style, plain background, no text")
     try:
-        img = image.generate_image(prompt)
-        return Response(img, mimetype="image/jpeg")
+        img = image.generate_card_image(prompt)  # генерация + удаление фона
+        return Response(img, mimetype="image/png")
     except Exception as err:  # noqa: BLE001
         return jsonify({"error": str(err)}), 502
 

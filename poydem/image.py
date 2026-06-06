@@ -50,3 +50,18 @@ def generate_image(prompt: str) -> bytes:
     url = images[0]["image_url"]["url"]
     b64 = url.split(",", 1)[1] if "," in url else url
     return base64.b64decode(b64)
+
+
+def remove_background(img_bytes: bytes) -> bytes:
+    """
+    Убирает фон у картинки → прозрачный PNG (через rembg, локально, бесплатно).
+    При первом запуске rembg скачает модель (~170 МБ), дальше работает офлайн.
+    """
+    from rembg import remove  # ленивый импорт — библиотека тяжёлая
+
+    return remove(img_bytes)
+
+
+def generate_card_image(prompt: str) -> bytes:
+    """Рисует картинку и убирает фон → прозрачный PNG персонажа для открытки."""
+    return remove_background(generate_image(prompt))
