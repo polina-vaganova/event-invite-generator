@@ -114,37 +114,64 @@ def generate_card_text(event: dict, recipient: str, style: str) -> str:
 
 
 # ============================================================
-# ПРОМПТ ДЛЯ КАРТИНКИ — место для логики команды
+# ПРОМПТ ДЛЯ КАРТИНКИ — его пишет САМА нейросеть (LLM)
 # ============================================================
-# Здесь команда задаёт, как картинка зависит от ваших предпочтений и события.
-# Ниже — простой рабочий пример-заглушка, замените на свои правила.
 
+# 🎨 НАШИ ПОЖЕЛАНИЯ К РИСУНКУ — правь это под себя (на русском).
+# Опиши, как должны выглядеть открытки: стиль рисунка, цвета, атмосферу.
+IMAGE_STYLE = (
+    "современная плоская векторная иллюстрация; "
+    "яркие насыщенные цвета; "
+    "тёплая праздничная атмосфера; "
+    "чисто и со вкусом, без лишних деталей; "
+    "оставить пустое место сверху под текст"
+)
+
+# Тон под стиль коммуникации (подсказка нейросети для настроения картинки).
+STYLE_MOOD = {
+    "friendly": "дружеская, тёплая, приглашающая",
+    "romantic": "романтичная, нежная, интимная",
+    "family": "уютная, семейная, душевная",
+    "funny": "игривая, весёлая, с юмором",
+}
+
+# Фолбэк-визуал по категории, если LLM недоступен.
 CATEGORY_VISUAL = {
     "movie": "cinematic movie scene, dramatic lighting",
     "concert": "vibrant concert stage, bright lights, energetic crowd",
     "performance": "elegant theatre stage, red curtains, spotlight",
-    "exhibition": "art gallery interior, paintings on walls, refined atmosphere",
-    "restaurant": "cozy restaurant table, warm candle light, fine dining",
-}
-
-STYLE_MOOD = {
-    "friendly": "fun and warm inviting mood",
-    "romantic": "romantic soft intimate mood",
-    "family": "cozy heartwarming family-friendly mood",
-    "funny": "playful quirky humorous mood",
+    "exhibition": "art gallery interior, paintings, refined atmosphere",
+    "restaurant": "cozy restaurant table, warm candle light",
 }
 
 
 def build_image_prompt(event: dict, style: str) -> str:
     """
-    АНГЛИЙСКИЙ промпт для нейросети-художника (FLUX). Без текста на картинке.
-
-    TODO (команда): заменить тело на свою логику — как картинка зависит от
-    предпочтений и события. Сигнатуру можно расширить.
+    Просит нейросеть (LLM) составить АНГЛИЙСКИЙ промпт для картинки,
+    учитывая контекст события и наши пожелания (IMAGE_STYLE).
+    Если LLM недоступен — фолбэк на простой шаблон.
     """
-    base = CATEGORY_VISUAL.get(event.get("category"), "festive event scene")
     mood = STYLE_MOOD.get(style, STYLE_MOOD["friendly"])
-    return (
-        f"{base}, {mood}, greeting card illustration, vivid colors, "
-        "high quality, no text, no letters"
+    description = (event.get("description") or "")[:400]
+
+    instruction = (
+        "Ты — арт-директор. Составь промпт НА АНГЛИЙСКОМ для нейросети-художника, "
+        "которая нарисует иллюстрацию для открытки-приглашения на событие.\n\n"
+        f"Событие: «{event.get('title', '')}» (категория: {event.get('category', '')}).\n"
+        f"Описание: {description}\n"
+        f"Настроение открытки: {mood}.\n\n"
+        f"Наши пожелания к рисунку: {IMAGE_STYLE}\n\n"
+        "Правила:\n"
+        "- ответь ТОЛЬКО промптом на английском, одной строкой;\n"
+        "- опиши сцену, передающую суть события;\n"
+        "- учти наши пожелания (стиль рисунка, цвета) и настроение;\n"
+        "- композиция с пустым местом сверху под текст;\n"
+        "- в конце обязательно добавь: no text, no letters, no watermark;\n"
+        "- без кавычек, заголовков и пояснений."
     )
+
+    try:
+        return complete(instruction)
+    except Exception:  # noqa: BLE001 — фолбэк, если LLM недоступен
+        base = CATEGORY_VISUAL.get(event.get("category"), "festive event scene")
+        return f"{base}, greeting card illustration, vivid colors, no text, no letters"
