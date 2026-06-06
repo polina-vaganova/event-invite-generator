@@ -40,9 +40,9 @@ def draft_message(recipient: str, style: str) -> str:
     """
     name = (recipient or "").strip() or "Привет"
     by_style = {
-        "romantic": f"{name}, только ты и я ✨",
+        "romantic": f"{name}, этот вечер — для нас двоих ✨",
         "friendly": f"{name}, го? 🎉",
-        "family": f"{name}, идём вместе 💛",
+        "family": f"{name}, проведём время всей семьёй 💛",
         "funny": f"{name}, умоляю 🔥",
     }
     return by_style.get(style, by_style["friendly"])
