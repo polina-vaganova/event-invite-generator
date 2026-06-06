@@ -28,28 +28,36 @@ def generate_image(prompt: str) -> bytes:
         raise RuntimeError("Нет ключа OpenRouter. Задайте OPENROUTER_API_KEY в .env")
 
     model = os.environ.get("OPENROUTER_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
-    resp = requests.post(
-        OPENROUTER_URL,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "modalities": ["image"],
-        },
-        timeout=90,
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "modalities": ["image"],
+    }
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+    last_err = None
+    for attempt in range(2):  # повтор при обрыве/таймауте (модель бывает медленной)
+        try:
+            resp = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=120)
+        except requests.exceptions.RequestException as err:
+            last_err = err
+            continue
+        if resp.status_code != 200:
+            raise RuntimeError(f"OpenRouter вернул {resp.status_code}: {resp.text[:300]}")
+
+        data = resp.json()
+        images = (data.get("choices") or [{}])[0].get("message", {}).get("images")
+        if not images:
+            raise RuntimeError(f"В ответе нет картинки: {str(data)[:300]}")
+
+        # Картинка приходит как data-URL: "data:image/png;base64,XXXX"
+        url = images[0]["image_url"]["url"]
+        b64 = url.split(",", 1)[1] if "," in url else url
+        return base64.b64decode(b64)
+
+    raise RuntimeError(
+        "Картинка не сгенерировалась — модель не ответила вовремя. Попробуйте ещё раз."
     )
-    if resp.status_code != 200:
-        raise RuntimeError(f"OpenRouter вернул {resp.status_code}: {resp.text[:300]}")
-
-    data = resp.json()
-    images = (data.get("choices") or [{}])[0].get("message", {}).get("images")
-    if not images:
-        raise RuntimeError(f"В ответе нет картинки: {str(data)[:300]}")
-
-    # Картинка приходит как data-URL: "data:image/png;base64,XXXX"
-    url = images[0]["image_url"]["url"]
-    b64 = url.split(",", 1)[1] if "," in url else url
-    return base64.b64decode(b64)
 
 
 def remove_background(img_bytes: bytes) -> bytes:
