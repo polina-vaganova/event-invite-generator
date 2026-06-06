@@ -49,8 +49,8 @@ def _mix(c, other, t: float) -> tuple:
 
 def _gradient_bg(color: tuple) -> Image.Image:
     """Мягкий вертикальный градиент-перелив: светлее сверху, чуть глубже снизу."""
-    top = _mix(color, (255, 255, 255), 0.28)     # светлее
-    bottom = _mix(color, (40, 30, 55), 0.10)      # чуть насыщеннее/глубже
+    top = _mix(color, (255, 255, 255), 0.28)      # светлее
+    bottom = _mix(color, (40, 30, 55), 0.10)       # чуть насыщеннее/глубже
     base = Image.new("RGB", (W, H), top)
     deep = Image.new("RGB", (W, H), bottom)
     mask = Image.linear_gradient("L").resize((W, H))  # 0 сверху → 255 снизу

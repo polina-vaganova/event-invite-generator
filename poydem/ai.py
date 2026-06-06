@@ -11,6 +11,7 @@
 Картинку рисует ОТДЕЛЬНАЯ функция — image.generate_image() (см. poydem/image.py).
 """
 import os
+import re
 
 import requests
 
@@ -93,7 +94,8 @@ def build_prompt(event: dict, recipient: str, style: str) -> str:
         f"Тон: {tone}.\n\n"
         "Правила:\n"
         "- СТРОГО следуй тону выше — он задаёт и длину, и допустимость сленга/мемов;\n"
-        "- это короткая фраза-подпись, а НЕ описание; обратись по имени;\n"
+        f"- это короткая фраза-подпись, а НЕ описание; обратись по имени «{name}»;\n"
+        f"- используй ИМЕННО имя «{name}», НЕ пиши заглушки в скобках вроде [Имя] или [имя];\n"
         "- варианты разных тонов должны явно отличаться по настроению;\n"
         "- НЕ пиши дату, время, место и название — они будут отдельно;\n"
         "- БЕЗ эмодзи и смайликов;\n"
@@ -111,6 +113,14 @@ def _one_phrase(text: str) -> str:
     return (text or "").strip()
 
 
+def _fix_name(text: str, recipient: str) -> str:
+    """Подстраховка: меняет заглушку [Имя]/[имя]/[name] на реальное имя."""
+    name = (recipient or "").strip()
+    if not name:
+        return re.sub(r"\[[^\]]*\]\s*,?\s*", "", text).strip()
+    return re.sub(r"\[[^\]]*\]", name, text).strip()
+
+
 def generate_card_text(event: dict, recipient: str, style: str) -> str:
     """
     Текст открытки. Если есть ключ OpenRouter — зовёт LLM,
@@ -118,7 +128,7 @@ def generate_card_text(event: dict, recipient: str, style: str) -> str:
     """
     if os.environ.get("OPENROUTER_API_KEY"):
         try:
-            return _one_phrase(complete(build_prompt(event, recipient, style)))
+            return _fix_name(_one_phrase(complete(build_prompt(event, recipient, style))), recipient)
         except Exception:  # noqa: BLE001 — на демо не падаем, откатываемся на заглушку
             pass
     return content.draft_message(recipient, style)

@@ -5,7 +5,6 @@
 {% block content %}
 {% if not event %}
   <div class="mx-auto max-w-md px-4 py-24 text-center">
-    <div class="text-5xl mb-4">✨</div>
     <h1 class="text-2xl font-extrabold tracking-tight">Сначала выберите событие</h1>
     <p class="mt-2 text-muted">Откройте событие на Афише и нажмите «Позвать друга».</p>
     <a href="{{ url_for('afisha.index') }}"
@@ -42,9 +41,11 @@
          },
          celebrate(){
            if (!window.confetti) return;
-           confetti({ particleCount: 130, spread: 80, origin: { y: 0.3 } });
-           setTimeout(()=> confetti({ particleCount: 70, angle: 60,  spread: 60, origin: { x: 0 } }), 180);
-           setTimeout(()=> confetti({ particleCount: 70, angle: 120, spread: 60, origin: { x: 1 } }), 180);
+           const colors = ['#ff3d2e','#ec4899','#ffd400','#22c55e','#3b82f6','#a855f7','#ff7a00'];
+           confetti({ particleCount: 200, spread: 100, startVelocity: 50, ticks: 250, scalar: 1.2, origin: { y: 0.3 }, colors });
+           setTimeout(()=> confetti({ particleCount: 120, angle: 60,  spread: 75, startVelocity: 55, scalar: 1.2, origin: { x: 0 }, colors }), 150);
+           setTimeout(()=> confetti({ particleCount: 120, angle: 120, spread: 75, startVelocity: 55, scalar: 1.2, origin: { x: 1 }, colors }), 150);
+           setTimeout(()=> confetti({ particleCount: 100, spread: 120, startVelocity: 35, scalar: 1.1, origin: { y: 0.4 }, colors }), 350);
          },
          async recolor(c){
            try {
@@ -54,7 +55,7 @@
            } catch(e){}
          },
          copied: false,
-         get shareText(){ const t = this.$el.dataset.eventTitle || 'событие'; return (this.recipient ? this.recipient + ', ' : '') + 'тебя зовут на «' + t + '» ✨'; },
+         get shareText(){ const t = this.$el.dataset.eventTitle || 'событие'; return (this.recipient ? this.recipient + ', ' : '') + 'тебя зовут на «' + t + '»'; },
          async share(){
            const text = this.shareText;
            // 1) пробуем отправить САМУ картинку-открытку файлом (телефоны)
@@ -84,10 +85,7 @@
       <span class="inline-block rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold tracking-wide text-muted">
         Афиша × Нейросеть
       </span>
-      <h1 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">
-        Позвать красиво
-        <span style="background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent">✨</span>
-      </h1>
+      <h1 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight">Позвать красиво</h1>
       <p class="mt-2 text-muted">Нейросеть создаст персональную открытку-приглашение за полминуты</p>
     </div>
 
@@ -134,7 +132,7 @@
       <button @click="generate()" :disabled="loading"
               class="rounded-full py-3.5 font-semibold text-white shadow-lg transition hover:opacity-95 disabled:opacity-70"
               style="background:linear-gradient(135deg,var(--accent),var(--accent-2))">
-        <span x-show="!loading" x-text="done ? 'Сгенерировать заново' : 'Создать открытку ✨'"></span>
+        <span x-show="!loading" x-text="done ? 'Сгенерировать заново' : 'Создать открытку'"></span>
         <span x-show="loading" class="inline-flex items-center justify-center gap-2">
           <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
             <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -164,7 +162,7 @@
       <button @click="done=false" aria-label="Закрыть"
               class="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-full border border-border text-muted transition hover:border-foreground hover:text-foreground">✕</button>
 
-      <h3 class="text-center text-lg font-extrabold">Открытка готова! 🎉</h3>
+      <h3 class="text-center text-lg font-extrabold">Открытка готова!</h3>
 
       <img :src="cardSrc" alt="Открытка" class="mx-auto mt-4 w-full max-w-xs rounded-3xl shadow-xl ring-1 ring-black/5" />
 
