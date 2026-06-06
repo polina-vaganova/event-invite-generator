@@ -27,7 +27,7 @@
            const d = await r.json();
            if (!r.ok) throw new Error(d.error || 'Ошибка');
            this.cardUrl = d.url; this.cardId = d.card_id; this.colors = d.colors || [];
-           this.color = 'pink'; this.bust = 0; this.done = true;
+           this.color = d.color || 'pink'; this.bust = 0; this.done = true;
          } catch(e){ this.error = e.message; }
          this.loading = false;
        },

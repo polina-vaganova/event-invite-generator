@@ -4,6 +4,7 @@ Blueprint студии открыток (наш продукт).
   • GET  /create?event=<id>  — экран создания открытки (получает событие по ID)
   • POST /api/generate       — генерация текста открытки (сейчас заглушка, потом ИИ)
 """
+import random
 from pathlib import Path
 
 from flask import (
@@ -76,11 +77,12 @@ def api_card():
     recipient = data.get("recipient", "")
     style = data.get("style", "friendly")
 
+    bg = random.choice(list(card_render.PALETTE))  # случайный фон по умолчанию
     try:
         # 1. текст 2. персонаж (прозрачный PNG) 3. сборка открытки
         text = ai.generate_card_text(event, recipient, style)
         character = image.generate_card_image(ai.build_image_prompt(event, style))
-        card_png = card_render.render_card(event, text, character)
+        card_png = card_render.render_card(event, text, character, bg=bg)
     except Exception as err:  # noqa: BLE001
         return jsonify({"error": str(err)}), 502
 
@@ -97,6 +99,7 @@ def api_card():
         "card_id": card_id,
         "url": url_for("static", filename=f"cards/{filename}"),
         "text": text,
+        "color": bg,
         "colors": list(card_render.PALETTE.keys()),
     })
 
