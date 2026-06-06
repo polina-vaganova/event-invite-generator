@@ -1,49 +1,52 @@
 """
-Генерация картинки нейросетью через Cloudflare Workers AI (модель FLUX.1 schnell).
+Генерация картинки нейросетью через OpenRouter (modalities: ["image"]).
 
-Нужны ключи в .env:
-    CLOUDFLARE_ACCOUNT_ID=...
-    CLOUDFLARE_API_TOKEN=...
+Использует ТОТ ЖЕ ключ, что и текст:
+    OPENROUTER_API_KEY=...
+    OPENROUTER_IMAGE_MODEL=...   (модель-художник; выбери бесплатную, см. ниже)
 
-Как получить: https://dash.cloudflare.com → API Tokens (шаблон «Workers AI») + Account ID.
-Бесплатный тариф: 10 000 «нейронов»/день (~100–200 картинок), без карты.
+⚠️ Картинки на OpenRouter — это ОТДЕЛЬНЫЕ модели (вкладка Image).
+Бесплатные помечены значком подарка 🎁. Выбери бесплатную и впиши её slug
+в OPENROUTER_IMAGE_MODEL, иначе будет ошибка оплаты.
 """
 import base64
 import os
 
 import requests
 
-MODEL = "@cf/black-forest-labs/flux-1-schnell"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+DEFAULT_IMAGE_MODEL = "x-ai/grok-imagine-image-quality"
 
 
-def generate_image(prompt: str, steps: int = 6) -> bytes:
+def generate_image(prompt: str) -> bytes:
     """
-    Рисует картинку по описанию и возвращает байты PNG/JPEG.
-    Бросает понятную ошибку, если ключей нет или API не ответил.
+    Рисует картинку по описанию и возвращает её байты.
+    Бросает понятную ошибку, если нет ключа или модель не вернула картинку.
     """
-    account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
-    token = os.environ.get("CLOUDFLARE_API_TOKEN")
-    if not account_id or not token:
-        raise RuntimeError(
-            "Нет ключей Cloudflare. Задайте CLOUDFLARE_ACCOUNT_ID и "
-            "CLOUDFLARE_API_TOKEN в файле .env"
-        )
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if not key:
+        raise RuntimeError("Нет ключа OpenRouter. Задайте OPENROUTER_API_KEY в .env")
 
-    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{MODEL}"
+    model = os.environ.get("OPENROUTER_IMAGE_MODEL", DEFAULT_IMAGE_MODEL)
     resp = requests.post(
-        url,
-        headers={"Authorization": f"Bearer {token}"},
-        json={"prompt": prompt, "steps": steps},
-        timeout=40,
+        OPENROUTER_URL,
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        json={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "modalities": ["image"],
+        },
+        timeout=60,
     )
-
     if resp.status_code != 200:
-        raise RuntimeError(f"Cloudflare вернул {resp.status_code}: {resp.text[:300]}")
+        raise RuntimeError(f"OpenRouter вернул {resp.status_code}: {resp.text[:300]}")
 
     data = resp.json()
-    # FLUX.1 schnell отдаёт картинку как base64 в result.image
-    b64 = (data.get("result") or {}).get("image")
-    if not b64:
+    images = (data.get("choices") or [{}])[0].get("message", {}).get("images")
+    if not images:
         raise RuntimeError(f"В ответе нет картинки: {str(data)[:300]}")
 
+    # Картинка приходит как data-URL: "data:image/png;base64,XXXX"
+    url = images[0]["image_url"]["url"]
+    b64 = url.split(",", 1)[1] if "," in url else url
     return base64.b64decode(b64)
