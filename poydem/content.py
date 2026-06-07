@@ -24,11 +24,12 @@ def category_label(category: str) -> tuple[str, str]:
 
 
 # --- Стиль коммуникации (дословно из кейса) ---
+# icon — путь к картинке в static/ (если задан, показываем её вместо emoji)
 COMM_STYLES = [
-    {"id": "friendly", "label": "Дружеский", "emoji": "🤝"},
-    {"id": "romantic", "label": "Романтичный", "emoji": "💕"},
-    {"id": "family", "label": "Семейный", "emoji": "🏡"},
-    {"id": "funny", "label": "Шуточный", "emoji": "😄"},
+    {"id": "friendly", "label": "Дружеский", "emoji": "🤝", "icon": "icons/friendly.png"},
+    {"id": "romantic", "label": "Романтичный", "emoji": "💕", "icon": "icons/romantic.png"},
+    {"id": "family", "label": "Семейный", "emoji": "🏡", "icon": "icons/family.png"},
+    {"id": "funny", "label": "Шуточный", "emoji": "😄", "icon": "icons/funny.png"},
 ]
 
 
