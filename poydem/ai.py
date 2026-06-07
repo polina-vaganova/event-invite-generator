@@ -1,12 +1,10 @@
 """
-ИИ-генерация текста открытки через OpenRouter (бесплатные модели LLM).
+ИИ-генерация текста открытки через внешний ИИ-API
+(OpenAI-совместимый формат chat/completions).
 
-Нужен ключ в .env:
-    OPENROUTER_API_KEY=...
-    OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct:free   (опционально)
-
-Как получить ключ: https://openrouter.ai → Sign in → Keys → Create Key.
-Бесплатные модели ищи на https://openrouter.ai/models (фильтр «Free»).
+Провайдера и модель можно заменить на любые — настройки в .env:
+    OPENROUTER_API_KEY=...      ключ доступа к ИИ-API
+    OPENROUTER_MODEL=...        slug модели LLM (опционально)
 
 Картинку рисует ОТДЕЛЬНАЯ функция — image.generate_image() (см. poydem/image.py).
 """
@@ -23,7 +21,7 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DEFAULT_MODEL = "google/gemma-4-31b-it:free"
 
 # Запасные модели на случай, если основная перегружена (429).
-# Бесплатные модели OpenRouter часто заняты — фолбэк делает текст надёжным.
+# Бесплатные модели часто заняты — фолбэк делает текст надёжным.
 FALLBACK_MODELS = [
     "z-ai/glm-4.5-air:free",
     "meta-llama/llama-3.3-70b-instruct:free",
@@ -34,12 +32,12 @@ FALLBACK_MODELS = [
 # ---------- Вызов LLM ----------
 def complete(prompt: str) -> str:
     """
-    Отправляет промпт в OpenRouter и возвращает текст ответа.
+    Отправляет промпт в ИИ-API и возвращает текст ответа.
     Пробует основную модель, при перегрузке (429) — ретраи и запасные модели.
     """
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
-        raise RuntimeError("Нет ключа OpenRouter. Задайте OPENROUTER_API_KEY в .env")
+        raise RuntimeError("Нет ключа ИИ-API. Задайте OPENROUTER_API_KEY в .env")
 
     primary = os.environ.get("OPENROUTER_MODEL", DEFAULT_MODEL)
     models = [primary] + [m for m in FALLBACK_MODELS if m != primary]
@@ -69,7 +67,7 @@ def complete(prompt: str) -> str:
                 continue
             break  # не-429 ошибка → пробуем следующую модель
 
-    raise RuntimeError(f"OpenRouter недоступен ({last_error})")
+    raise RuntimeError(f"ИИ-сервис недоступен ({last_error})")
 
 
 # ---------- Промпт для текста ----------
@@ -123,7 +121,7 @@ def _fix_name(text: str, recipient: str) -> str:
 
 def generate_card_text(event: dict, recipient: str, style: str) -> str:
     """
-    Текст открытки. Если есть ключ OpenRouter — зовёт LLM,
+    Текст открытки. Если есть ключ ИИ-API — зовёт LLM,
     иначе (или при ошибке) — заглушка по стилю, чтобы продукт не падал.
     """
     if os.environ.get("OPENROUTER_API_KEY"):

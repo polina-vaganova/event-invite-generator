@@ -33,7 +33,7 @@ def api_test_image():
 @bp.get("/api/test-text")
 def api_test_text():
     """
-    Проверка ключа OpenRouter: генерит текст приглашения и отдаёт его.
+    Проверка ключа ИИ-API: генерит текст приглашения и отдаёт его.
     Пример: /api/test-text?recipient=Аня&style=friendly&event=6014552
     """
     event = store.get_event(request.args.get("event", "")) or {
